@@ -1,7 +1,7 @@
 package main
 
 import (
-	"Learn/handlers"
+	"Practise/handlers"
 	"context"
 	"github.com/gorilla/mux"
 	"github.com/nicholasjackson/env"
@@ -14,6 +14,8 @@ import (
 
 var bindAddress = env.String("BIND_ADDRESS", false, ":9090", "Bind address for the server")
 
+//var dbConnStr = "user=postgres password=2136 dbname=postgres sslmode=disable" // Update with your actual connection string
+
 func main() {
 
 	env.Parse()
@@ -21,6 +23,9 @@ func main() {
 	l := log.New(os.Stdout, "products-api ", log.LstdFlags)
 
 	// create the handlers
+	//data.InitializeDatabase(dbConnStr)
+
+	// Create the handlers and pass the database connection
 	ph := handlers.NewProducts(l)
 
 	// create a new serve mux and register the handlers
@@ -55,7 +60,7 @@ func main() {
 
 		err := s.ListenAndServe()
 		if err != nil {
-			l.Printf("Error starting server: %s\n", err)
+			l.Println(err)
 			os.Exit(1)
 		}
 	}()

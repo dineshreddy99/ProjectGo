@@ -1,14 +1,31 @@
 package data
 
 import (
+	"database/sql"
 	"encoding/json"
-	"fmt"
-	"io"
-	"regexp"
-	"time"
-
 	"github.com/go-playground/validator"
+	_ "github.com/lib/pq"
+	"io"
+	"log"
+	"regexp"
 )
+
+var DB *sql.DB
+
+func init() {
+	connStr := "user=postgres password=2136 dbname=postgres sslmode=disable" // Update with your actual connection string
+
+	var err error
+	DB, err = sql.Open("postgres", connStr)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if err = DB.Ping(); err != nil {
+		log.Fatal(err)
+	}
+	//defer DB.Close()
+	log.Println("Connected to the database")
+}
 
 // Product defines the structure for an API product
 type Product struct {
@@ -51,7 +68,7 @@ type Products []*Product
 
 // ToJSON serializes the contents of the collection to JSON
 // NewEncoder provides better performance than json.Unmarshal as it does not
-// have to buffer the output into an in memory slice of bytes
+// have to buffer the output into an in-memory slice of bytes
 // this reduces allocations and the overheads of the service
 //
 // https://golang.org/pkg/encoding/json/#NewEncoder
@@ -60,64 +77,41 @@ func (p *Products) ToJSON(w io.Writer) error {
 	return e.Encode(p)
 }
 
-// GetProducts returns a list of products
-func GetProducts() Products {
-	return productList
+func GetProducts() (Products, error) {
+	rows, err := DB.Query("SELECT * FROM products")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var Products Products
+	for rows.Next() {
+		var p Product
+		err := rows.Scan(&p.ID, &p.Name, &p.Description, &p.Price, &p.SKU)
+		if err != nil {
+			return nil, err
+		}
+		Products = append(Products, &p)
+	}
+	return Products, nil
 }
 
 func AddProduct(p *Product) {
-	p.ID = getNextID()
-	productList = append(productList, p)
+	query := "INSERT INTO products(name, description, price, sku) VALUES($1, $2, $3, $4) RETURNING id"
+	err := DB.QueryRow(query, p.Name, p.Description, p.Price, p.SKU).Scan(&p.ID)
+	if err != nil {
+		log.Println("Error adding product:", err)
+		return
+	}
 }
 
 func UpdateProduct(id int, p *Product) error {
-	_, pos, err := findProduct(id)
+	query := "UPDATE products SET name=$1, description=$2, price=$3, sku=$4 WHERE id=$5"
+	_, err := DB.Exec(query, p.Name, p.Description, p.Price, p.SKU, id)
 	if err != nil {
 		return err
 	}
-
-	p.ID = id
-	productList[pos] = p
-
 	return nil
 }
 
-var ErrProductNotFound = fmt.Errorf("Product not found")
-
-func findProduct(id int) (*Product, int, error) {
-	for i, p := range productList {
-		if p.ID == id {
-			return p, i, nil
-		}
-	}
-
-	return nil, -1, ErrProductNotFound
-}
-
-func getNextID() int {
-	lp := productList[len(productList)-1]
-	return lp.ID + 1
-}
-
-// productList is a hard coded list of products for this
-// example data source
-var productList = []*Product{
-	&Product{
-		ID:          1,
-		Name:        "Latte",
-		Description: "Frothy milky coffee",
-		Price:       2.45,
-		SKU:         "abc323",
-		CreatedOn:   time.Now().UTC().String(),
-		UpdatedOn:   time.Now().UTC().String(),
-	},
-	&Product{
-		ID:          2,
-		Name:        "Espresso",
-		Description: "Short and strong coffee without milk",
-		Price:       1.99,
-		SKU:         "fjd34",
-		CreatedOn:   time.Now().UTC().String(),
-		UpdatedOn:   time.Now().UTC().String(),
-	},
-}
+//var ErrProductNotFound = fmt.Errorf("Product not found")
