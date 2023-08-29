@@ -13,18 +13,18 @@ import (
 var DB *sql.DB
 
 func init() {
-	connStr := "user=postgres password=2136 dbname=postgres sslmode=disable" // Update with your actual connection string
+	connStr := "user=postgres password=4360 dbname=postgres host=172.20.0.3 sslmode=disable" // Update with your actual connection string
 
 	var err error
 	DB, err = sql.Open("postgres", connStr)
 	if err != nil {
 		log.Fatal(err)
 	}
-	if err = DB.Ping(); err != nil {
+	/*if err = DB.Ping(); err != nil {
 		log.Fatal(err)
 	}
 	//defer DB.Close()
-	log.Println("Connected to the database")
+	log.Println("Connected to the database")*/
 }
 
 // Product defines the structure for an API product
@@ -34,9 +34,9 @@ type Product struct {
 	Description string  `json:"description"`
 	Price       float32 `json:"price" validate:"gt=0"`
 	SKU         string  `json:"sku" validate:"required,sku"`
-	CreatedOn   string  `json:"-"`
-	UpdatedOn   string  `json:"-"`
-	DeletedOn   string  `json:"-"`
+	//CreatedOn   string  `json:"-"`
+	//UpdatedOn   string  `json:"-"`
+	//DeletedOn   string  `json:"-"`
 }
 
 func (p *Product) FromJSON(r io.Reader) error {
