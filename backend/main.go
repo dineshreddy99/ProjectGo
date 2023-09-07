@@ -3,6 +3,7 @@ package main
 import (
 	"Practise/handlers"
 	"context"
+	gohandlers "github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/nicholasjackson/env"
 	"log"
@@ -42,12 +43,18 @@ func main() {
 	postRouter.HandleFunc("/products", ph.AddProduct)
 	postRouter.Use(ph.MiddlewareValidateProduct)
 
+	DeleteRouter := sm.Methods(http.MethodDelete).Subrouter()
+	DeleteRouter.HandleFunc("/products/{id:[0-9]+}", ph.DeleteProduct)
+	DeleteRouter.Use(ph.MiddlewareValidateProduct)
+
+	ch := gohandlers.CORS(gohandlers.AllowedOrigins([]string{"*"}))
+
 	//sm.Handle("/products", ph)
 
 	// create a new server
-	s := http.Server{
+	s := &http.Server{
 		Addr:         *bindAddress,      // configure the bind address
-		Handler:      sm,                // set the default handler
+		Handler:      ch(sm),            // set the default handler
 		ErrorLog:     l,                 // set the logger for the server
 		ReadTimeout:  5 * time.Second,   // max time to read request from the client
 		WriteTimeout: 10 * time.Second,  // max time to write response to the client

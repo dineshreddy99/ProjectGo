@@ -13,7 +13,7 @@ import (
 var DB *sql.DB
 
 func init() {
-	connStr := "user=postgres password=4360 dbname=postgres host=172.20.0.3 sslmode=disable" // Update with your actual connection string
+	connStr := "user=postgres password=4360 dbname=postgres host=postgres sslmode=disable" // Update with your actual connection string
 
 	var err error
 	DB, err = sql.Open("postgres", connStr)
@@ -112,6 +112,17 @@ func UpdateProduct(id int, p *Product) error {
 		return err
 	}
 	return nil
+}
+
+func DeleteProduct(id int, p *Product) error {
+	query := "DELETE FROM products WHERE id=$1"
+	_, err := DB.Exec(query, id)
+	if err != nil {
+		return err
+
+	}
+	return nil
+
 }
 
 //var ErrProductNotFound = fmt.Errorf("Product not found")

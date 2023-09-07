@@ -1,7 +1,13 @@
 version: '3'
 services:
+  front-app:
+    image: front-app
+    container_name: front-app
+    ports:
+      - 3000:3000
   go-app:
     image: go-app
+    container_name: go-app
     ports:
       - 9090:9090
   pgadmin4:
